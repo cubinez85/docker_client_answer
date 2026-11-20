@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: client_answer_db
+    restart: always
+    environment:
+      # Берем значения напрямую из вашего .env файла
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "3947:5432"
+
+  web:
+    image: cubinez85/client_answer:web_latest
+    container_name: client_answer_web
+    restart: always
+    # Также используем переменные из .env для гибкости (с значениями по умолчанию)
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8092 --workers ${GUNICORN_WORKERS:-3} --timeout 120
+    env_file:
+      - .env
+    depends_on:
+      - db
+    volumes:
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+      - ./logs:/app/logs
+    ports:
+      - "${GUNICORN_PORT:-8092}:8092"
+
+volumes:
+  pg_data:
